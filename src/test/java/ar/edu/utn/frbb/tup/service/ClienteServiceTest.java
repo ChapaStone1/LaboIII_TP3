@@ -36,10 +36,11 @@ public class ClienteServiceTest {
     }
 
     @Test
-    public void testClienteMenor18Años() {
+    public void testClienteMenor18Años() throws ClienteAlreadyExistsException {
         Cliente clienteMenorDeEdad = new Cliente();
         clienteMenorDeEdad.setFechaNacimiento(LocalDate.of(2020, 2, 7));
-        assertThrows(IllegalArgumentException.class, () -> clienteService.darDeAltaCliente(clienteMenorDeEdad));
+        //clienteService.darDeAltaCliente(clienteMenorDeEdad);
+       assertThrows(IllegalArgumentException.class, () -> clienteService.darDeAltaCliente(clienteMenorDeEdad));
     }
 
     @Test
@@ -126,6 +127,100 @@ public class ClienteServiceTest {
     }
 
     //Agregar una CA$ y CC$ --> success 2 cuentas, titular peperino
+    @Test
+    public void testAgregarCajaAhorroyCuentaCorriente() throws TipoCuentaAlreadyExistsException {
+        Cliente pepeRino = new Cliente();
+        pepeRino.setDni(26456439);
+        pepeRino.setNombre("Pepe");
+        pepeRino.setApellido("Rino");
+        pepeRino.setFechaNacimiento(LocalDate.of(1978, 3,25));
+        pepeRino.setTipoPersona(TipoPersona.PERSONA_FISICA);
+
+        Cuenta cuenta = new Cuenta()
+                .setMoneda(TipoMoneda.PESOS)
+                .setBalance(500000)
+                .setTipoCuenta(TipoCuenta.CAJA_AHORRO);
+
+        when(clienteDao.find(26456439, true)).thenReturn(pepeRino);
+
+        clienteService.agregarCuenta(cuenta, pepeRino.getDni());
+
+        Cuenta cuenta2 = new Cuenta()
+                .setMoneda(TipoMoneda.PESOS)
+                .setBalance(500000)
+                .setTipoCuenta(TipoCuenta.CUENTA_CORRIENTE);
+
+        clienteService.agregarCuenta(cuenta2, pepeRino.getDni());
+        verify(clienteDao, times(2)).save(pepeRino);
+        assertEquals(2, pepeRino.getCuentas().size());
+        assertEquals(pepeRino, cuenta.getTitular());
+
+    }
+
     //Agregar una CA$ y CAU$S --> success 2 cuentas, titular peperino...
+    @Test
+    public void testAgregarCajaAhorroenPesosyDolares() throws TipoCuentaAlreadyExistsException {
+        Cliente pepeRino = new Cliente();
+        pepeRino.setDni(26456439);
+        pepeRino.setNombre("Pepe");
+        pepeRino.setApellido("Rino");
+        pepeRino.setFechaNacimiento(LocalDate.of(1978, 3,25));
+        pepeRino.setTipoPersona(TipoPersona.PERSONA_FISICA);
+
+        Cuenta cuenta = new Cuenta()
+                .setMoneda(TipoMoneda.DOLARES)
+                .setBalance(500000)
+                .setTipoCuenta(TipoCuenta.CAJA_AHORRO);
+
+        when(clienteDao.find(26456439, true)).thenReturn(pepeRino);
+
+        clienteService.agregarCuenta(cuenta, pepeRino.getDni());
+
+        Cuenta cuenta2 = new Cuenta()
+                .setMoneda(TipoMoneda.PESOS)
+                .setBalance(500000)
+                .setTipoCuenta(TipoCuenta.CAJA_AHORRO);
+
+        clienteService.agregarCuenta(cuenta2, pepeRino.getDni());
+        verify(clienteDao, times(2)).save(pepeRino);
+        assertEquals(2, pepeRino.getCuentas().size());
+        assertEquals(pepeRino, cuenta.getTitular());
+
+    }
     //Testear clienteService.buscarPorDni
+ 
+    @Test
+    public void testBuscarClienteporDNISuccess() throws IllegalArgumentException {
+        Cliente pepeRino = new Cliente();
+        pepeRino.setDni(26456439);
+        pepeRino.setNombre("Pepe");
+        pepeRino.setApellido("Rino");
+        pepeRino.setFechaNacimiento(LocalDate.of(1978, 3,25));
+        pepeRino.setTipoPersona(TipoPersona.PERSONA_FISICA);
+
+        when(clienteDao.find(26456439, true)).thenReturn(pepeRino);
+
+        Cliente result = clienteService.buscarClientePorDni(26456439);
+
+        assertNotNull(result);
+        assertEquals(pepeRino, result);
+
+        verify(clienteDao, times(1)).find(26456439, true);
+    }
+
+    @Test
+    public void testBuscarClienteporDNIFail() throws IllegalArgumentException{
+        long dni = 37389808;
+
+        when(clienteDao.find(dni, true)).thenReturn(null);
+
+        // Verifico que el test falle porque no encuentra cliente con ese dni
+        assertThrows(IllegalArgumentException.class, () -> {
+            clienteService.buscarClientePorDni(dni);
+        });
+        // el test falla porque no encuentra cliente con ese dni 
+        verify(clienteDao, times(1)).find(dni, true);
+
+    }
+
 }

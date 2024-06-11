@@ -74,8 +74,9 @@ public class Cuenta {
         this.balance = this.balance - cantidadADebitar;
     }
 
-    public void setNumeroCuenta(long numeroCuenta) {
+    public Cuenta setNumeroCuenta(long numeroCuenta) {
         this.numeroCuenta = numeroCuenta;
+        return this;
     }
 
     public void forzaDebitoDeCuenta(int i) {
